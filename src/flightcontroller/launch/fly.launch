@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="map_width" default="23" />
+  <arg name="map_height" default="23" />
+  <arg name="seed" default="427400" />
+
+  <include file="$(find flightgoggles)/launch/core.launch">
+  </include>
+
+  <include file="$(find visualizer)/launch/view.launch">
+  </include>
+
+  <include file="$(find flightcontroller)/launch/angle.launch">
+  </include>
+
+  <include file="$(find flightcontroller)/launch/velocity.launch">
+  </include>
+
+  <include file="$(find flightcontroller)/launch/position.launch">
+  </include>
+
+  <include file="$(find simple_control)/launch/simple_control.launch">
+    <arg name="map_width" value="$(arg map_width)" />
+    <arg name="map_height" value="$(arg map_height)" />
+  </include>
+
+  <node name="environment_controller" pkg="environment_controller" type="environment_controller_node" output="screen" required="True">
+    <param name="map_width" type="int" value="$(arg map_width)" />
+    <param name="map_height" type="int" value="$(arg map_height)" />
+    <param name="seed" type="int" value="$(arg seed)" />
+  </node>
+
+</launch>
