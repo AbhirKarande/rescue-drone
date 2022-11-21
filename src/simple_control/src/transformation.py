@@ -19,7 +19,8 @@ class transformation:
         time.sleep(10)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
-        self.dog = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
+        self.dog = Vector3()
+        self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
 
         self.mainloop()
     def dog_callback(self, data):
@@ -36,7 +37,7 @@ class transformation:
                     print("GOAL_POINT TYPE", type(goal_point))
                     print("GOAL_POINT", goal_point)
                     goal_point1 = do_transform_point(goal_point, lookup)
-                    print('GOAL POINT',goal_point1)
+                    print('TRANSFORMED DOG POINT',goal_point1)
                     self.dog = Vector3(int(goal_point1.point.x), int(goal_point1.point.y), int(goal_point1.point.z))
                     print('SELF.DOG', self.dog)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
