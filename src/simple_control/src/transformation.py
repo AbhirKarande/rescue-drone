@@ -22,6 +22,8 @@ class transformation:
         self.dog = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
 
         self.mainloop()
+    def dog_callback(self, data):
+        self.dog = data
     def mainloop(self):
         rate = rospy.Rate(2)
         while not rospy.is_shutdown():
