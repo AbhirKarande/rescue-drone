@@ -14,13 +14,12 @@ from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import PointStamped
 from tf2_geometry_msgs import do_transform_point
 
-class transformationAndPlanning:
+class transformation:
     def __init__(self):
         time.sleep(10)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
-        self.dog = Vector3()
-        self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
+        self.dog = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
 
         self.mainloop()
     def mainloop(self):
@@ -42,3 +41,9 @@ class transformationAndPlanning:
                     continue
             rate.sleep()
         
+if __name__ == '__main__':
+  rospy.init_node('transformation_node')
+  try:
+    t = transformation()
+  except rospy.ROSInterruptException:
+    pass

@@ -5,6 +5,7 @@
   <arg name="map_height" default="23" />
 
 	<!-- TODO add any calls to your code -->
-  <node pkg="simple_control" type="transformationAndPlanning.py" name="transformationAndPlanning" output="screen" />
+  <node pkg="simple_control" type="transformation.py" name="transformation_node" output="screen" />
+
 
 </launch>
