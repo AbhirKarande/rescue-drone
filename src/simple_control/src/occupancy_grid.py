@@ -27,5 +27,9 @@ class occupancy_grid:
                 
                 #update the current cell (drone's position)of the occupancy grid to 100
                 
-                self.occupancy_grid.data[] = 100
+                self.occupancy_grid.data[int(self.drone_pos.x)] = 100
+            elif self.lidar_reading and (self.lidar_reading.x == 0 or self.lidar_reading.y == 0):
+                    
+                    #update the current cell (drone's position)of the occupancy grid to 0
+                self.occupancy_grid.data[int(self.drone_pos.x)] = 0
 
