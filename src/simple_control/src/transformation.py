@@ -22,8 +22,8 @@ class transformation:
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.dog = Vector3()
         self.lidar = LaserScan()
-        self.dog_sub = rospy.Subscriber('/cell_tower/position', LaserScan, self.dog_callback)
-        self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', Vector3, self.lidar_callback)
+        self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
+        self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
 
         self.mainloop()
     def dog_callback(self, data):
@@ -36,7 +36,7 @@ class transformation:
             if self.dog and (self.dog.x != 0 or self.dog.y != 0):
                 print('SELF.DOG', self.dog)
                 try: 
-                    print(self.lidar)
+                    print('SELF.LIDAR', self.lidar)
                     lookup = self.tfBuffer.lookup_transform('world', 'cell_tower', rospy.Time.now())
                     #print('LOOKUP', lookup)
                     goal_point = PointStamped("cell_tower",self.dog)
