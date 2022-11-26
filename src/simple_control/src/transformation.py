@@ -34,7 +34,6 @@ class transformation:
         rate = rospy.Rate(2)
         while not rospy.is_shutdown():
             if self.dog and (self.dog.x != 0 or self.dog.y != 0):
-                print('SELF.DOG', self.dog)
                 try: 
                     print('SELF.LIDAR', self.lidar)
                     lookup = self.tfBuffer.lookup_transform('world', 'cell_tower', rospy.Time.now())

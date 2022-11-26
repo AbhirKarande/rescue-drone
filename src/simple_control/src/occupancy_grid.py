@@ -4,11 +4,12 @@ import rospy
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import OccupancyGrid
+from sensor_msgs.msg import LaserScan
 
 class occupancy_grid:
     def __init__(self):
-        self.lidar_reading = Vector3()
-        self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', Vector3, self.lidar_callback)
+        self.lidar_reading = LaserScan()
+        self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
         self.drone_pos = Vector3()
         self.drone_pos_sub = rospy.Subscriber('/uav/sensors/gps', Vector3, self.drone_pos_callback)
         self.occupancy_grid = OccupancyGrid()
