@@ -24,11 +24,27 @@ class occupancy_grid:
     def mainloop(self):
         #rate = rospy.Rate(2)
         while not rospy.is_shutdown():
-            if self.lidar_reading and (self.lidar_reading.ranges[0] != 0):
-                #update the occupancy grid at the position of the lidar reading to 100
-                self.occupancy_grid.data[int(self.drone_pos.x)] = 100
-            elif self.lidar_reading and (self.lidar_reading.x == 0 or self.lidar_reading.y == 0):
-                    
-                    #update the current cell (drone's position)of the occupancy grid to 0
-                self.occupancy_grid.data[int(self.drone_pos.x)] = 0
+            #get the angle of the first ray
+            angle = self.lidar_reading.angle_min
+            #iterate over all the rays
+            for i in range(len(self.lidar_reading.ranges)):
+                #get the distance of the ray
+                distance = self.lidar_reading.ranges[i]
+                #calculate the x and y coordinates of the ray
+                x = self.drone_pos.x + distance * math.cos(angle)
+                y = self.drone_pos.y + distance * math.sin(angle)
+                #calculate the index of the cell in the occupancy grid
+                index = int(x) + int(y) * 10
+                #set the cell to 100
+                self.occupancy_grid.data[index] = 100
+                #increment the angle
+                angle += self.lidar_reading.angle_increment
+            #publish the occupancy grid
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            #rate.sleep()
+
+
+            #publish the occupancy grid
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+
 
