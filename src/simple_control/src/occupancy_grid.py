@@ -71,6 +71,7 @@ class occupancy_grid:
                 angle += self.lidar_reading.angle_increment
             #TODO: move the drone to the dog's position according to the occupancy grid so far
             
+            
             #publish the occupancy grid
             self.occupancy_grid_pub.publish(self.occupancy_grid)
             #rate.sleep()
