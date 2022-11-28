@@ -14,7 +14,6 @@ from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import PointStamped
 from tf2_geometry_msgs import do_transform_point
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import OccupancyGrid
 
 class transformation:
     def __init__(self):
@@ -23,20 +22,14 @@ class transformation:
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.dog = Vector3()
         self.lidar = LaserScan()
-        self.drone_pos = Vector3()
-        self.occupancy_grid = OccupancyGrid()
         self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
         self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
-        self.occupancy_grid.data = [50 for i in range(100)]
-        self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
-        self.drone_pos_sub = rospy.Subscriber('/uav/sensors/gps', Vector3, self.drone_pos_callback)
+
         self.mainloop()
     def dog_callback(self, data):
         self.dog = data
     def lidar_callback(self, data):
         self.lidar = data
-    def drone_pos_callback(self, data):
-        self.drone_pos = data
     def mainloop(self):
         rate = rospy.Rate(2)
         while not rospy.is_shutdown():
