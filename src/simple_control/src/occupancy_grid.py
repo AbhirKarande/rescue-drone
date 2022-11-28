@@ -13,7 +13,7 @@ class occupancy_grid:
         self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
         self.drone_pos = Vector3()
         self.drone_pos_sub = rospy.Subscriber('/uav/sensors/gps', Vector3, self.drone_pos_callback)
-        self.drone_pos_pub = rospy.Publisher('/uav/control/gps', Vector3, queue_size=1)
+        self.drone_pos_pub = rospy.Publisher('/uav/input/position', Vector3, queue_size=1)
         self.occupancy_grid = OccupancyGrid()
         self.dog = Vector3()
         self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
@@ -27,8 +27,10 @@ class occupancy_grid:
         self.dog = data
     def drone_pos_callback(self, data):
         self.drone_pos = data
+        
+
     def mainloop(self):
-        #rate = rospy.Rate(2)
+        rate = rospy.Rate(2)
         while not rospy.is_shutdown():
             if self.dog and (self.dog.x != 0 or self.dog.y != 0):
                 try: 
@@ -69,11 +71,16 @@ class occupancy_grid:
                 self.occupancy_grid.data[emptyIndex] = 0
                 #increment the angle
                 angle += self.lidar_reading.angle_increment
-            #TODO: move the drone to the dog's position according to the occupancy grid so far
-            
+            #TODO: 
+            self.drone_pos_pub.publish(self.dog)
             
             #publish the occupancy grid
             self.occupancy_grid_pub.publish(self.occupancy_grid)
-            #rate.sleep()
-
+            rate.sleep()
+if __name__ == '__main__':
+  rospy.init_node('occupancy_grid_node')
+  try:
+    t = occupancy_grid()
+  except rospy.ROSInterruptException:
+    pass
 
