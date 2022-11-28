@@ -24,7 +24,7 @@ class transformation:
         self.lidar = LaserScan()
         self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
         self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
-
+        
         self.mainloop()
     def dog_callback(self, data):
         self.dog = data

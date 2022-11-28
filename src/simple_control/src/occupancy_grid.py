@@ -13,6 +13,7 @@ class occupancy_grid:
         self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
         self.drone_pos = Vector3()
         self.drone_pos_sub = rospy.Subscriber('/uav/sensors/gps', Vector3, self.drone_pos_callback)
+        self.drone_pos_pub = rospy.Publisher('/uav/control/gps', Vector3, queue_size=1)
         self.occupancy_grid = OccupancyGrid()
         self.dog = Vector3()
         self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
@@ -59,6 +60,8 @@ class occupancy_grid:
                 self.occupancy_grid.data[index] = 100
                 #increment the angle
                 angle += self.lidar_reading.angle_increment
+            #TODO: move the drone to the dog's position according to the occupancy grid so far
+            
             #publish the occupancy grid
             self.occupancy_grid_pub.publish(self.occupancy_grid)
             #rate.sleep()
