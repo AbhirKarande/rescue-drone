@@ -54,10 +54,19 @@ class occupancy_grid:
                 #calculate the x and y coordinates of the ray
                 x = self.drone_pos.x + distance * math.cos(angle)
                 y = self.drone_pos.y + distance * math.sin(angle)
+
+                emptyDistance = distance - 0.5
+                emptyX = self.drone_pos.x + emptyDistance * math.cos(angle)
+                emptyY = self.drone_pos.y + emptyDistance * math.sin(angle)
+
+
+
                 #calculate the index of the cell in the occupancy grid
                 index = int(x) + int(y) * 10
+                emptyIndex = int(emptyX) + int(emptyY) * 10
                 #set the cell to 100
                 self.occupancy_grid.data[index] = 100
+                self.occupancy_grid.data[emptyIndex] = 0
                 #increment the angle
                 angle += self.lidar_reading.angle_increment
             #TODO: move the drone to the dog's position according to the occupancy grid so far
@@ -65,9 +74,5 @@ class occupancy_grid:
             #publish the occupancy grid
             self.occupancy_grid_pub.publish(self.occupancy_grid)
             #rate.sleep()
-
-
-            #publish the occupancy grid
-            self.occupancy_grid_pub.publish(self.occupancy_grid)
 
 
