@@ -20,14 +20,17 @@ class occupancy_grid:
         self.dog = Vector3()
         #self.dog_sub = rospy.Subscriber('/cell_tower/position', Vector3, self.dog_callback)
         #initialize all cells of the occupancy grid to 50
-        self.occupancy_grid.data = [50 for i in range(121)]
+        
         self.occupancy_grid.info.map_load_time = rospy.Time.now()
         self.occupancy_grid.header.frame_id = 'world'
         self.occupancy_grid.header.stamp = rospy.Time.now()
         
         self.occupancy_grid.info.resolution = 1
-        self.occupancy_grid.info.width = 22
-        self.occupancy_grid.info.height = 22
+        #get the map_width argument from fly.launch
+        self.occupancy_grid.info.width = rospy.get_param('environment_controller/map_width')
+        self.occupancy_grid.info.height = rospy.get_param('environment_controller/map_height')
+        self.size = self.occupancy_grid.info.width * self.occupancy_grid.info.height
+        self.occupancy_grid.data = [50 for i in range(self.size)]
         self.occupancy_grid.info.origin.position.x = self.drone_pos.pose.position.x
         self.occupancy_grid.info.origin.position.y = self.drone_pos.pose.position.y
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
