@@ -66,7 +66,7 @@ class occupancy_grid:
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     continue
             #add the position of the dog to the occupancy grid
-            dog_index = self.dog.x + (self.dog.y * self.occupancy_grid.info.width)
+            dog_index = self.occupancy_grid.info.width * (int(self.dog.y) + self.occupancy_grid.info.height//2) + (int(self.dog.x) + self.occupancy_grid.info.width//2)
             print('DOG_INDEX', int(dog_index))
             self.occupancy_grid.data[int(dog_index)] = -3
             #get the angle of the first ray
