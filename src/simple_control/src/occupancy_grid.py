@@ -73,9 +73,27 @@ class occupancy_grid:
             #get the angle of the first ray
             angle = self.lidar_reading.angle_min
             #iterate over all the rays
+
+
+            North = 0
+            West = 0
+            South = 0
+            East = 0
             for i in range(len(self.lidar_reading.ranges)):
+                if i == 3:
+                    North = self.lidar_reading.ranges[i]
+                if i == 7:
+                    West = self.lidar_reading.ranges[i]
+                if i == 11:
+                    South = self.lidar_reading.ranges[i]
+                if i == 15:
+                    East = self.lidar_reading.ranges[i]
+
+            cardinals = [North, West, South, East]
+            for i in range(len(cardinals)):
                 #get the distance of the ray
-                distance = self.lidar_reading.ranges[i]
+                distance = cardinals[i]
+                print(distance)
                 #everything between the drone position and the distance of the ray is empty space
                 if distance > 1:
                     for j in range((int(distance)+1)):
@@ -156,7 +174,7 @@ class occupancy_grid:
                 
                 #set the cell to 100
                 #increment the angle
-                angle += self.lidar_reading.angle_increment
+                angle += (self.lidar_reading.angle_increment * float(4))
             #TODO: move the drone to where there is empty space
             
             
