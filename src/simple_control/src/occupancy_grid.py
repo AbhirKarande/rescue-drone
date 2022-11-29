@@ -34,8 +34,8 @@ class occupancy_grid:
         self.occupancy_grid.info.height = rospy.get_param('environment_controller/map_height')
         self.size = self.occupancy_grid.info.width * self.occupancy_grid.info.height
         self.occupancy_grid.data = [50 for i in range(self.size)]
-        self.occupancy_grid.info.origin.position.x = -(self.occupancy_grid.info.width/2)
-        self.occupancy_grid.info.origin.position.y = -(self.occupancy_grid.info.height/2)
+        self.occupancy_grid.info.origin.position.x = float(-(self.occupancy_grid.info.width/float(2)))
+        self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
         self.mainloop()
     def lidar_callback(self, data):
@@ -49,6 +49,7 @@ class occupancy_grid:
     def mainloop(self):
         rate = rospy.Rate(2)
         while not rospy.is_shutdown():
+            print(self.occupancy_grid.info.origin.position)
             if self.dog and (self.dog.x != 0 or self.dog.y != 0):
                 try: 
                     lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
@@ -75,10 +76,61 @@ class occupancy_grid:
             for i in range(len(self.lidar_reading.ranges)):
                 #get the distance of the ray
                 distance = self.lidar_reading.ranges[i]
+                #everything between the drone position and the distance of the ray is empty space
+                if distance > 1:
+                    for j in range((int(distance)+1)):
+                        #get the x and y coordinates of the ray
+                        x = int(math.cos(angle) * j)
+                        y = int(math.sin(angle) * j)
+                        #get the index of the ray in the occupancy grid
+                        index = self.occupancy_grid.info.width * (y + self.occupancy_grid.info.height//2) + (x + self.occupancy_grid.info.width//2)
+                        #if the index is not out of bounds
+                        if index < self.size and index >= 0:
+                            #set the cell to empty space
+                            self.occupancy_grid.data[index] = 0
+                else:
+                    #get the x and y coordinates of the ray
+                    x = int(math.cos(angle) * distance)
+                    y = int(math.sin(angle) * distance)
+                    #get the index of the ray in the occupancy grid
+                    index = self.occupancy_grid.info.width * (y + self.occupancy_grid.info.height//2) + (x + self.occupancy_grid.info.width//2)
+                    #if the index is not out of bounds
+                    if index < self.size and index >= 0:
+                        #set the cell to occupied space
+                        self.occupancy_grid.data[index] = 0
                 #calculate the x and y coordinates of the ray
+                
                 x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
                 y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2))
+                print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
+                if x > 0:
+                    
+                    index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2))
+                    if distance > 1:
+                        index += 1
+                    
+                else: 
+                    index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2)) 
+                    if distance > 1:
+                        index -= 1
+
+                if y > 0:
+                    if distance > 1:
+                        index = (self.occupancy_grid.info.width-1) * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2)) 
+                    else:
+                        index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2))
+
+                    
+                else:
+                    if distance > 1:
+                        index = (self.occupancy_grid.info.width+1) * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2)) 
+                    else:
+                        index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2))
+
+
+                
+
+                
                 self.occupancy_grid.data[int(index)] = 100
                 print('X', x)
                 print('Y', y)
