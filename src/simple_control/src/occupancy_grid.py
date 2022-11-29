@@ -34,8 +34,8 @@ class occupancy_grid:
         self.occupancy_grid.info.height = rospy.get_param('environment_controller/map_height')
         self.size = self.occupancy_grid.info.width * self.occupancy_grid.info.height
         self.occupancy_grid.data = [50 for i in range(self.size)]
-        self.occupancy_grid.info.origin.position.x = 0
-        self.occupancy_grid.info.origin.position.y = 0
+        self.occupancy_grid.info.origin.position.x = -(self.occupancy_grid.info.width/2)
+        self.occupancy_grid.info.origin.position.y = -(self.occupancy_grid.info.height/2)
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
         self.mainloop()
     def lidar_callback(self, data):
@@ -76,9 +76,9 @@ class occupancy_grid:
                 #get the distance of the ray
                 distance = self.lidar_reading.ranges[i]
                 #calculate the x and y coordinates of the ray
-                x = self.drone_pos.pose.position.x + distance * math.cos(angle)
-                y = self.drone_pos.pose.position.y + distance * math.sin(angle)
-                index = x + (y * self.occupancy_grid.info.width)
+                x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
+                y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
+                index = self.occupancy_grid.info.width * (int(y) + int(self.occupancy_grid.info.height//2)) + (int(x) + int(self.occupancy_grid.info.width//2))
                 self.occupancy_grid.data[int(index)] = 100
                 print('X', x)
                 print('Y', y)
