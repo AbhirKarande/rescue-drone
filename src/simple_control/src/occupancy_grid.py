@@ -83,14 +83,17 @@ class occupancy_grid:
                 print('X', x)
                 print('Y', y)
                 print('INDEX: ',int(index))
-                # emptyDistance = distance
+                emptyDistance = distance
+
+                #TODO: figure out how to calculate empty space between obstacles and the drone
+                #TODO: figure out how to detect doors
                 # while emptyDistance > 0:
                 #     emptyDistance = distance - 0.5
 
                 #     emptyX = self.drone_pos.pose.position.x + emptyDistance * math.cos(angle)
                 #     emptyY = self.drone_pos.pose.position.y + emptyDistance * math.sin(angle)
-                #     emptyIndex = int(emptyX) + int(emptyY) * 10
-                #     self.occupancy_grid.data[emptyIndex] = 0
+                #     emptyIndex = emptyX + (emptyY * self.occupancy_grid.info.width)
+                #     self.occupancy_grid.data[int(emptyIndex)] = 0
                 
 
 
@@ -102,7 +105,7 @@ class occupancy_grid:
                 #set the cell to 100
                 #increment the angle
                 angle += self.lidar_reading.angle_increment
-            #move the drone to where there is empty space
+            #TODO: move the drone to where there is empty space
             
             
             #publish the occupancy grid
