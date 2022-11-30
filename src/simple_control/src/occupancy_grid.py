@@ -8,6 +8,7 @@ from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point
+from environment_controller.srv import use_key
 import math
 class occupancy_grid:
     def __init__(self):
@@ -37,6 +38,8 @@ class occupancy_grid:
         self.occupancy_grid.info.origin.position.x = float(-(self.occupancy_grid.info.width/float(2)))
         self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
+
+        self.service = rospy.Service('use_key', self.use_key)
         self.mainloop()
     def lidar_callback(self, data):
         self.lidar_reading = data
@@ -119,7 +122,7 @@ class occupancy_grid:
                         xEmpty = (math.cos(angle) * j)
                         yEmpty = (math.sin(angle) * j)
                         #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + (int(yEmpty) + self.occupancy_grid.info.height//2)
+                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
                         #if the index is not out of bounds
                         if index < self.size and index >= 0:
                             #set the cell to empty space
@@ -129,7 +132,7 @@ class occupancy_grid:
                     xEmpty = (math.cos(angle) * distance)
                     yEmpty = (math.sin(angle) * distance)
                     #get the index of the ray in the occupancy grid
-                    index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + (int(yEmpty) + self.occupancy_grid.info.height//2)
+                    index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
                     #if the index is not out of bounds
                     if index < self.size and index >= 0:
                         #set the cell to occupied space
@@ -138,17 +141,13 @@ class occupancy_grid:
                 print('Y', y)
                 print('INDEX: ',int(index))
                 
-                #increment the angle by every 4th angle increment
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
 
-            #     #TODO: figure out how to calculate empty space between obstacles and the drone
-            #     #TODO: figure out how to detect doors
-            #     # while emptyDistance > 0:
-            #     #     emptyDistance = distance - 0.5
+            #convert the index to the right of the origin position to the x and y coordinates
+            
 
-            #     #     emptyX = self.drone_pos.pose.position.x + emptyDistance * math.cos(angle)
-            #     #     emptyY = self.drone_pos.pose.position.y + emptyDistance * math.sin(angle)
-            #     #     emptyIndex = emptyX + (emptyY * self.occupancy_grid.info.width)
-            #     #     self.occupancy_grid.data[int(emptyIndex)] = 0
+
+
                 
 
 
@@ -164,7 +163,6 @@ class occupancy_grid:
             
             # #publish the occupancy grid
             # print(self.occupancy_grid.data)
-            self.occupancy_grid_pub.publish(self.occupancy_grid)
             rate.sleep()
 if __name__ == '__main__':
   rospy.init_node('occupancy_grid_node')
