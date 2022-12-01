@@ -4,11 +4,14 @@ import rospy
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from environment_controller.srv import use_key
+
+
 import math
 class occupancy_grid:
     def __init__(self):
@@ -38,8 +41,8 @@ class occupancy_grid:
         self.occupancy_grid.info.origin.position.x = float(-(self.occupancy_grid.info.width/float(2)))
         self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
+        rospy.wait_for_service('use_key')
 
-        self.service = rospy.Service('use_key', self.use_key)
         self.mainloop()
     def lidar_callback(self, data):
         self.lidar_reading = data
@@ -50,7 +53,7 @@ class occupancy_grid:
         
 
     def mainloop(self):
-        rate = rospy.Rate(2)
+        rate = rospy.Rate(5)
         print(self.occupancy_grid.info.origin.position)
         self.occupancy_grid.data[self.size/2-1] = 0
         if self.dog and (self.dog.x != 0 or self.dog.y != 0):
@@ -77,7 +80,7 @@ class occupancy_grid:
             #get the angle of the first ray
             #iterate over all the rays
 
-
+            door = list()
             North = 0
             West = 0
             South = 0
@@ -105,7 +108,19 @@ class occupancy_grid:
                 #get the distance of the ray
                 angle = cardinalAngles[i]
                 distance = cardinals[i]
+                
+                if distance == float('inf'):
+                    if i == 0:
+                        distance = self.occupancy_grid.info.height/2
+                    if i == 1:
+                        distance = self.occupancy_grid.info.width/2
+                    if i == 2:
+                        distance = self.occupancy_grid.info.height/2
+                    if i == 3:
+                        distance = self.occupancy_grid.info.width/2
+
                 print(distance)
+                distance += 0.15
                 distance = round(distance)
                 print('ROUNDED DISTANCE', distance, i)
                 print('ANGLE', angle)
@@ -115,9 +130,12 @@ class occupancy_grid:
                 print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
                 index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
                 self.occupancy_grid.data[int(index)] = 100
+                if i == 3:
+                    door.append((int(x), int(y)))
+                    print('EAST DOOR', door)
 
                 if distance > 1:
-                    for j in range((int(distance))):
+                    for j in range((int(distance)+1)):
                         #get the x and y coordinates of the ray
                         xEmpty = (math.cos(angle) * j)
                         yEmpty = (math.sin(angle) * j)
@@ -141,10 +159,18 @@ class occupancy_grid:
                 print('Y', y)
                 print('INDEX: ',int(index))
                 
+
+            #create a point using the x and y coordinates from the door set
+            #call the use_key service with the point
+            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
+            testDoor = Point(1,0,0)
+            useKeyservice(testDoor)
+
+            doorIndex = self.occupancy_grid.info.height * (1 + self.occupancy_grid.info.width//2) + (0 + self.occupancy_grid.info.height//2)
+            self.occupancy_grid.data[int(doorIndex)] = -2
+
             self.occupancy_grid_pub.publish(self.occupancy_grid)
 
-            #convert the index to the right of the origin position to the x and y coordinates
-            
 
 
 

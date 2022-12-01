@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="map_width" default="11" />
-  <arg name="map_height" default="11" />
-  <arg name="seed" default="6" />
+  <arg name="map_width" default="23" />
+  <arg name="map_height" default="23" />
+  <arg name="seed" default="433615" />
 
   <include file="$(find flightgoggles)/launch/core.launch">
   </include>
