@@ -7,15 +7,11 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
-import tf2_ros
-from tf2_geometry_msgs import do_transform_point
-from environment_controller.srv import use_key
-
-
 import math
-class occupancy_grid:
+
+
+class DoorDetection:
     def __init__(self):
-        
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.lidar_reading = LaserScan()
@@ -41,46 +37,16 @@ class occupancy_grid:
         self.occupancy_grid.info.origin.position.x = float(-(self.occupancy_grid.info.width/float(2)))
         self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
-        rospy.wait_for_service('use_key')
-
-        self.mainloop()
     def lidar_callback(self, data):
         self.lidar_reading = data
     def dog_callback(self, data):
         self.dog = data
     def drone_pos_callback(self, data):
         self.drone_pos = data
-        
-
+    
     def mainloop(self):
-        rate = rospy.Rate(5)
-        print(self.occupancy_grid.info.origin.position)
-        self.occupancy_grid.data[self.size/2-1] = 0
-        if self.dog and (self.dog.x != 0 or self.dog.y != 0):
-             
-            lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
-            #print('LOOKUP', lookup)
-            goal_point = PointStamped("cell_tower",self.dog)
-            #print("GOAL_POINT TYPE", type(goal_point))
-            #print("GOAL_POINT", goal_point)
-            print('SELF.DOG BEFORE TRANSFORM', self.dog)
-            goal_point1 = do_transform_point(goal_point, lookup)
-            #print('TRANSFORMED DOG POINT',goal_point1)
-            self.dog = Vector3(int(goal_point1.point.x), int(goal_point1.point.y), int(goal_point1.point.z))
-            print('SELF.DOG', self.dog)
-            print('SELF.Drone', self.drone_pos.pose.position)
-
-
-        #add the position of the dog to the occupancy grid
-        dog_index = self.occupancy_grid.info.height * (int(self.dog.x) + self.occupancy_grid.info.width//2) + (int(self.dog.y) + self.occupancy_grid.info.height//2)
-        print('DOG_INDEX', int(dog_index))
-        self.occupancy_grid.data[int(dog_index)] = -3
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            
-            #get the angle of the first ray
-            #iterate over all the rays
-
-            door = list()
             North = 0
             West = 0
             South = 0
@@ -151,7 +117,6 @@ class occupancy_grid:
                 print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
                 index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
                 self.occupancy_grid.data[int(index)] = 100
-                if i == 3:
                     door.append((int(x), int(y)))
                     print('EAST DOOR', door)
 
@@ -189,37 +154,6 @@ class occupancy_grid:
             #call the use_key service with the point
 
             
-            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
-            testDoor = Point(1,0,0)
-            useKeyservice(testDoor)
-
-            doorIndex = self.occupancy_grid.info.height * (1 + self.occupancy_grid.info.width//2) + (0 + self.occupancy_grid.info.height//2)
-            self.occupancy_grid.data[int(doorIndex)] = -2
+        
 
             self.occupancy_grid_pub.publish(self.occupancy_grid)
-
-
-
-
-                
-
-
-
-
-
-            #     #calculate the index of the cell in the occupancy grid
-                
-            #     #set the cell to 100
-            #     #increment the angle
-            # #TODO: move the drone to where there is empty space
-            
-            
-            # #publish the occupancy grid
-            # print(self.occupancy_grid.data)
-            rate.sleep()
-if __name__ == '__main__':
-  rospy.init_node('occupancy_grid_node')
-  try:
-    t = occupancy_grid()
-  except rospy.ROSInterruptException:
-    pass
