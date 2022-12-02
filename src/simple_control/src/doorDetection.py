@@ -120,7 +120,7 @@ class DoorDetection:
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node('door_detection')
+    rospy.init_node('door_detection_node')
     try:
         dd = DoorDetection()
     except rospy.ROSInterruptException:
