@@ -37,6 +37,11 @@ class DoorDetection:
         self.occupancy_grid.info.origin.position.x = float(-(self.occupancy_grid.info.width/float(2)))
         self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
+        self.north = []
+        self.west = []
+        self.south = []
+        self.east = []
+        
     def lidar_callback(self, data):
         self.lidar_reading = data
     def dog_callback(self, data):
@@ -75,75 +80,16 @@ class DoorDetection:
                 angle = cardinalAngles[i]
                 distance = cardinals[i]
                 
-                if distance == float('inf'):
-                    if i == 0:
-                        distance = self.lidar_reading.range_max
-                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
-                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
-                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                        self.occupancy_grid.data[int(index)] = 50
-                    if i == 1:
-                        distance = self.lidar_reading.range_max
-                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
-                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
-                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                        self.occupancy_grid.data[int(index)] = 50
-                    if i == 2:
-                        distance = self.lidar_reading.range_max
-                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
-                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
-                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                        self.occupancy_grid.data[int(index)] = 50
-                    if i == 3:
-                        distance = self.lidar_reading.range_max
-                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
-                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
-                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                        self.occupancy_grid.data[int(index)] = 50
-
-
-                print(distance)
-                distance += 0.15
-                distance = round(distance)
-                print('ROUNDED DISTANCE', distance, i)
-                print('ANGLE', angle)
-                #everything between the drone position and the distance of the ray is empty space
-                x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
-                y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
-                print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
-                index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                self.occupancy_grid.data[int(index)] = 100
-                    door.append((int(x), int(y)))
-                    print('EAST DOOR', door)
-
-                if distance > 1:
-                    for j in range((int(distance)+1)):
-                        #get the x and y coordinates of the ray
-                        xEmpty = (math.cos(angle) * j)
-                        yEmpty = (math.sin(angle) * j)
-                        #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                        #if the index is not out of bounds
-                        if index < self.size and index >= 0:
-                            #set the cell to empty space
-                            self.occupancy_grid.data[index] = 0
-                else:
-                    #get the x and y coordinates of the ray
-                    xEmpty = (math.cos(angle) * distance)
-                    yEmpty = (math.sin(angle) * distance)
-                    #get the index of the ray in the occupancy grid
-                    index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                    #if the index is not out of bounds
-                    if index < self.size and index >= 0:
-                        #set the cell to occupied space
-                        self.occupancy_grid.data[index] = 0
-                print('X', x)
-                print('Y', y)
-                print('INDEX: ',int(index))
+                #append the distance to the appropriate list
+                if i == 0:
+                    self.north.append(distance)
+                if i == 1:
+                    self.west.append(distance)
+                if i == 2:
+                    self.south.append(distance)
+                if i == 3:
+                    self.east.append(distance)
+            
             
 
 
