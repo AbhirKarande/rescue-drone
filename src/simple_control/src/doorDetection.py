@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
 import math
-
+import numpy as np
 
 class DoorDetection:
     def __init__(self):
@@ -74,21 +74,35 @@ class DoorDetection:
             cardinals = [North, West, South, East]
             print('CARDINALS', cardinals)
             print('NORTH', North)
+            while len(self.north) < 10:
+                for i in range(len(cardinals)):
+                    #get the distance of the ray
+                    angle = cardinalAngles[i]
+                    distance = cardinals[i]
+                    
+                    #append the distance to the appropriate list
+                    if i == 0:
+                        self.north.append(distance)
+                    if i == 1:
+                        self.west.append(distance)
+                    if i == 2:
+                        self.south.append(distance)
+                    if i == 3:
+                        self.east.append(distance)
             
-            for i in range(len(cardinals)):
-                #get the distance of the ray
-                angle = cardinalAngles[i]
-                distance = cardinals[i]
-                
-                #append the distance to the appropriate list
-                if i == 0:
-                    self.north.append(distance)
-                if i == 1:
-                    self.west.append(distance)
-                if i == 2:
-                    self.south.append(distance)
-                if i == 3:
-                    self.east.append(distance)
+            #determine the variance of each list
+            northVariance = np.var(self.north)
+            westVariance = np.var(self.west)
+            southVariance = np.var(self.south)
+            eastVariance = np.var(self.east)
+            variances = [northVariance, westVariance, southVariance, eastVariance]
+
+            #get the list with the highest variance
+            maxVariance = max(variances)
+            maxIndex = variances.index(maxVariance)
+            print('MAX INDEX', maxIndex)
+
+            
             
             
 
@@ -103,3 +117,11 @@ class DoorDetection:
         
 
             self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rate.sleep()
+
+if __name__ == '__main__':
+    rospy.init_node('door_detection')
+    try:
+        dd = DoorDetection()
+    except rospy.ROSInterruptException:
+        pass
