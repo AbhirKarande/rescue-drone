@@ -80,7 +80,6 @@ class occupancy_grid:
             #get the angle of the first ray
             #iterate over all the rays
 
-            door = list()
             North = 0
             West = 0
             South = 0
@@ -151,9 +150,7 @@ class occupancy_grid:
                 print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
                 index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
                 self.occupancy_grid.data[int(index)] = 100
-                if i == 3:
-                    door.append((int(x), int(y)))
-                    print('EAST DOOR', door)
+
 
                 if distance > 1:
                     for j in range((int(distance)+1)):
