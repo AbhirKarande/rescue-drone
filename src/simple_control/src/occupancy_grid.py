@@ -111,13 +111,34 @@ class occupancy_grid:
                 
                 if distance == float('inf'):
                     if i == 0:
-                        distance = self.occupancy_grid.info.height/2
+                        distance = self.lidar_reading.range_max
+                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
+                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
+                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
+                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+                        self.occupancy_grid.data[int(index)] = 50
                     if i == 1:
-                        distance = self.occupancy_grid.info.width/2
+                        distance = self.lidar_reading.range_max
+                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
+                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
+                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
+                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+                        self.occupancy_grid.data[int(index)] = 50
                     if i == 2:
-                        distance = self.occupancy_grid.info.height/2
+                        distance = self.lidar_reading.range_max
+                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
+                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
+                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
+                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+                        self.occupancy_grid.data[int(index)] = 50
                     if i == 3:
-                        distance = self.occupancy_grid.info.width/2
+                        distance = self.lidar_reading.range_max
+                        x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
+                        y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
+                        print('DISTANCE: ', distance,'ANGLE: ', angle, 'X: ', x,'Y: ', y)
+                        index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+                        self.occupancy_grid.data[int(index)] = 50
+
 
                 print(distance)
                 distance += 0.15
