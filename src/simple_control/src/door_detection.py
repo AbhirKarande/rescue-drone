@@ -100,6 +100,14 @@ class door_detection:
             maxVar, maxVarIndex = self.varianceOfLists(self.north, self.west, self.south, self.east)
             print('MAXVAR AND MAXINDEX', maxVar, maxVarIndex)
 
+            x = self.drone_pos.pose.position.x + (cardinals[maxVarIndex] * math.cos(cardinalAngles[maxVarIndex]))
+            y = self.drone_pos.pose.position.y + (cardinals[maxVarIndex] * math.sin(cardinalAngles[maxVarIndex]))
+            index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+            self.occupancy_grid.data[int(index)] = -2
+
+
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+
             
             
             
