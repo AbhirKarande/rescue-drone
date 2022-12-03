@@ -6,5 +6,5 @@
 
 	<!-- TODO add any calls to your code -->
   <node pkg="simple_control" type="occupancy_grid.py" name="occupancy_grid_node" output="screen" />
-  <node pkg="simple_control" type="doorDetection.py" name="door_detection_node" output="screen" />
+  <node pkg="simple_control" type="door_detection.py" name="door_detection_node" output="screen" />
 </launch>

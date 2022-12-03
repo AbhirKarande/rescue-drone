@@ -10,10 +10,8 @@ from sensor_msgs.msg import LaserScan
 import math
 import numpy as np
 
-class DoorDetection:
+class door_detection:
     def __init__(self):
-        self.tfBuffer = tf2_ros.Buffer()
-        self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.lidar_reading = LaserScan()
         self.lidar_sub = rospy.Subscriber('/uav/sensors/lidar', LaserScan, self.lidar_callback)
         self.drone_pos = PoseStamped()
@@ -41,6 +39,7 @@ class DoorDetection:
         self.west = []
         self.south = []
         self.east = []
+        self.mainloop()
         
     def lidar_callback(self, data):
         self.lidar_reading = data
@@ -48,9 +47,18 @@ class DoorDetection:
         self.dog = data
     def drone_pos_callback(self, data):
         self.drone_pos = data
+
+    def varianceOfLists(self, list1, list2, list3, list4):
+        northVariance = np.var(list1)
+        westVariance = np.var(list2)
+        southVariance = np.var(list3)
+        eastVariance = np.var(list4)
+        variances = [northVariance, westVariance, southVariance, eastVariance]
+        #return the list with the highest variance
+        return max(variances), variances.index(max(variances))
     
     def mainloop(self):
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(5)
         while not rospy.is_shutdown():
             North = 0
             West = 0
@@ -72,35 +80,25 @@ class DoorDetection:
             eastAngle = angl + self.lidar_reading.angle_increment * 15
             cardinalAngles = [northAngle, westAngle, southAngle, eastAngle]
             cardinals = [North, West, South, East]
-            print('CARDINALS', cardinals)
-            print('NORTH', North)
-            while len(self.north) < 10:
-                for i in range(len(cardinals)):
-                    #get the distance of the ray
-                    angle = cardinalAngles[i]
-                    distance = cardinals[i]
-                    
-                    #append the distance to the appropriate list
-                    if i == 0:
-                        self.north.append(distance)
-                    if i == 1:
-                        self.west.append(distance)
-                    if i == 2:
-                        self.south.append(distance)
-                    if i == 3:
-                        self.east.append(distance)
+            print('ANGLANGL', angl)
             
-            #determine the variance of each list
-            northVariance = np.var(self.north)
-            westVariance = np.var(self.west)
-            southVariance = np.var(self.south)
-            eastVariance = np.var(self.east)
-            variances = [northVariance, westVariance, southVariance, eastVariance]
-
-            #get the list with the highest variance
-            maxVariance = max(variances)
-            maxIndex = variances.index(maxVariance)
-            print('MAX INDEX', maxIndex)
+            for i in range(len(cardinals)):
+                #get the distance of the ray
+                angle = cardinalAngles[i]
+                distance = cardinals[i]
+                
+                #append the distance to the appropriate list
+                if i == 0:
+                    self.north.append(distance)
+                if i == 1:
+                    self.west.append(distance)
+                if i == 2:
+                    self.south.append(distance)
+                if i == 3:
+                    self.east.append(distance)
+            
+            maxVar, maxVarIndex = self.varianceOfLists(self.north, self.west, self.south, self.east)
+            print('MAXVAR AND MAXINDEX', maxVar, maxVarIndex)
 
             
             
@@ -116,12 +114,11 @@ class DoorDetection:
             
         
 
-            self.occupancy_grid_pub.publish(self.occupancy_grid)
             rate.sleep()
 
 if __name__ == '__main__':
     rospy.init_node('door_detection_node')
     try:
-        dd = DoorDetection()
+        dd = door_detection()
     except rospy.ROSInterruptException:
         pass
