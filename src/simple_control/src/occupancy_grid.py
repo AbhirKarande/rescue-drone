@@ -11,8 +11,16 @@ import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from environment_controller.srv import use_key
 import numpy as np
+from enum import Enum
 
 import math
+
+class searchAndRescueState(Enum):
+    EXPLORING = 1
+    DOOR_DETECTION = 2
+
+
+
 class occupancy_grid:
     def __init__(self):
         
@@ -53,7 +61,29 @@ class occupancy_grid:
         self.dog = data
     def drone_pos_callback(self, data):
         self.drone_pos = data
+    def goalTransform(self, goal):
+        #transform the goal from the cell tower frame to the world frame
+        if self.dog and (self.dog.x != 0 or self.dog.y != 0):
+             
+            lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
+            #print('LOOKUP', lookup)
+            goal_point = PointStamped("cell_tower",self.dog)
+            #print("GOAL_POINT TYPE", type(goal_point))
+            #print("GOAL_POINT", goal_point)
+            print('SELF.DOG BEFORE TRANSFORM', self.dog)
+            goal_point1 = do_transform_point(goal_point, lookup)
+            #print('TRANSFORMED DOG POINT',goal_point1)
+            self.dog = Vector3(int(goal_point1.point.x), int(goal_point1.point.y), int(goal_point1.point.z))
+            print('SELF.DOG', self.dog)
+            print('SELF.Drone', self.drone_pos.pose.position)
 
+
+        #add the position of the dog to the occupancy grid
+        dog_index = self.occupancy_grid.info.height * (int(self.dog.x) + self.occupancy_grid.info.width//2) + (int(self.dog.y) + self.occupancy_grid.info.height//2)
+        print('DOG_INDEX', int(dog_index))
+        self.occupancy_grid.data[int(dog_index)] = -3
+
+            
     def varianceOfLists(self, list1, list2, list3, list4):
         #get the standard deviation of each of the lists
         
@@ -93,36 +123,8 @@ class occupancy_grid:
             y = self.drone_pos.pose.position.y + (i * math.sin(cardinalAngles[maxVarIndex]))
             index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
             self.occupancy_grid.data[int(index)] = 0
-
-
-    
         
-
-    def mainloop(self):
-        rate = rospy.Rate(5)
-        print(self.occupancy_grid.info.origin.position)
-        self.occupancy_grid.data[self.size/2-1] = 0
-        if self.dog and (self.dog.x != 0 or self.dog.y != 0):
-             
-            lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
-            #print('LOOKUP', lookup)
-            goal_point = PointStamped("cell_tower",self.dog)
-            #print("GOAL_POINT TYPE", type(goal_point))
-            #print("GOAL_POINT", goal_point)
-            print('SELF.DOG BEFORE TRANSFORM', self.dog)
-            goal_point1 = do_transform_point(goal_point, lookup)
-            #print('TRANSFORMED DOG POINT',goal_point1)
-            self.dog = Vector3(int(goal_point1.point.x), int(goal_point1.point.y), int(goal_point1.point.z))
-            print('SELF.DOG', self.dog)
-            print('SELF.Drone', self.drone_pos.pose.position)
-
-
-        #add the position of the dog to the occupancy grid
-        dog_index = self.occupancy_grid.info.height * (int(self.dog.x) + self.occupancy_grid.info.width//2) + (int(self.dog.y) + self.occupancy_grid.info.height//2)
-        print('DOG_INDEX', int(dog_index))
-        self.occupancy_grid.data[int(dog_index)] = -3
-        while not rospy.is_shutdown():
-            
+        def explore(self):
             #get the angle of the first ray
             #iterate over all the rays
 
@@ -229,6 +231,18 @@ class occupancy_grid:
 
             self.occupancy_grid_pub.publish(self.occupancy_grid)
 
+
+
+    
+        
+
+    def mainloop(self):
+        rate = rospy.Rate(5)
+        print(self.occupancy_grid.info.origin.position)
+        self.occupancy_grid.data[self.size/2-1] = 0
+        while not rospy.is_shutdown():
+            
+            
 
 
 
