@@ -47,8 +47,12 @@ class AStarPlanner:
       for next in self.get_neighbors(current, map_data):
         # Compute the cost to traverse to that node
         edge_cost = math.sqrt(((current[0] - next[0])**2) + ((current[1] - next[1]) ** 2))
+        #Compute edge cost using manhattan distance
+        #edge_cost = abs(current[0] - next[0]) + abs(current[1] - next[1])
         # Compute the estimated cost to goal (heuristic)
         goal_cost = math.sqrt(((goal_position[0] - next[0])**2) + ((goal_position[1] - next[1]) ** 2))
+        #Compute goal cost as using manhattan distance
+        #goal_cost = abs(goal_position[0] - next[0]) + abs(goal_position[1] - next[1])
         # Add the neighbors to the frontier with the new cost
 
         new_cost = cost_so_far[str(current)] + edge_cost

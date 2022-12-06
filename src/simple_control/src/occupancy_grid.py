@@ -10,6 +10,7 @@ import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from environment_controller.srv import use_key
 import math
+import time
 import numpy as np
 class occupancy_grid:
     def __init__(self):
@@ -40,196 +41,30 @@ class occupancy_grid:
         self.occupancy_grid.info.origin.position.y = float(-(self.occupancy_grid.info.height/float(2)))
         self.occupancy_grid_pub = rospy.Publisher('/map', OccupancyGrid, queue_size=10)
         rospy.wait_for_service('use_key')
+        self.dog_detected=False
+        self.dogCoords=(0,0)
+        
+        
         self.mainloop()
     def lidar_callback(self, data):
         self.lidar_reading = data
         print(self.lidar_reading.ranges)
         print(self.lidar_reading.range_min)
         print(self.lidar_reading.range_max)
+    def euclidean_to_grid(self, x, y):
+        return self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
+
 
     def dog_callback(self, data):
         self.dog = data
     def drone_pos_callback(self, data):
         self.drone_pos = data
-    def detect_door(self):
-        #get 10 readings from the lidar 
-        rate = rospy.Rate(15)
-        North=[]
-        South=[]
-        East=[]
-        West=[]
-        for i in range(15):
-            x=self.lidar_reading.ranges
-            #if x is empty continue
-            if len(x)==0:
-                continue
-            #print identifier x
-            print("LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOL")
-            North.append(x[3])
-            South.append(x[11])
-            East.append(x[15])
-            West.append(x[7])
-            print('-'*50)
-            rate.sleep()
-        #calculate the variance of North, South, East, West
-        North_var=np.var(North)
-        South_var=np.var(South)
-        East_var=np.var(East)
-        West_var=np.var(West)
-        #print north, south, east and west variances with the following format
-        print('North variance: ', North_var)
-        print('South variance: ', South_var)
-        print('East variance: ', East_var)
-        print('West variance: ', West_var)
-        #print a line to identify
-        print('-'*50)
-        angl = self.lidar_reading.angle_min
-        northAngle = angl + self.lidar_reading.angle_increment * 3
-        westAngle = angl + self.lidar_reading.angle_increment * 7
-        southAngle = angl + self.lidar_reading.angle_increment * 11
-        eastAngle = angl + self.lidar_reading.angle_increment * 15
-        #the direction with the most variance is the direction of the door
-        #if the variance of North is the highest, the door is in the North
-        if North_var>South_var and North_var>East_var and North_var>West_var:
-            print('Door is in the North')
-            distance = (np.mean(North))
-            distance += 0.15
-            distance = round(distance)
-            x = self.drone_pos.pose.position.x + (distance * math.cos(northAngle))
-            y = self.drone_pos.pose.position.y + (distance * math.sin(northAngle))
-            door_index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-            self.occupancy_grid.data[door_index] = -2
-#            self.occupancy_grid_pub.publish(self.occupancy_grid)
-            if distance > 1:
-                    for j in range((int(distance)+1)):
-                        #get the x and y coordinates of the ray
-                        xEmpty = (math.cos(northAngle) * j)
-                        yEmpty = (math.sin(northAngle) * j)
-                        #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                        #if the index is not out of bounds
-                        if index < self.size and index >= 0:
-                            #set the cell to empty space
-                            self.occupancy_grid.data[index] = 0
-            else:
-                #get the x and y coordinates of the ray
-                xEmpty = (math.cos(northAngle) * distance)
-                yEmpty = (math.sin(northAngle) * distance)
-                #get the index of the ray in the occupancy grid
-                index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                #if the index is not out of bounds
-                if index < self.size and index >= 0:
-                    #set the cell to occupied space
-                    self.occupancy_grid.data[index] = 0
-        #if the variance of South is the highest, the door is in the South
-        elif South_var>North_var and South_var>East_var and South_var>West_var:
-            print('Door is in the South')
-            distance = (np.mean(South))
-            distance += 0.15
-            distance = round(distance)
-            x = self.drone_pos.pose.position.x + (distance * math.cos(southAngle))
-            y = self.drone_pos.pose.position.y + (distance * math.sin(southAngle))
-            door_index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-            self.occupancy_grid.data[door_index] = -2
- #           self.occupancy_grid_pub.publish(self.occupancy_grid)
-            if distance > 1:
-                    for j in range((int(distance)+1)):
-                        #get the x and y coordinates of the ray
-                        xEmpty = (math.cos(southAngle) * j)
-                        yEmpty = (math.sin(southAngle) * j)
-                        #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                        #if the index is not out of bounds
-                        if index < self.size and index >= 0:
-                            #set the cell to empty space
-                            self.occupancy_grid.data[index] = 0
-            else:
-                #get the x and y coordinates of the ray
-                xEmpty = (math.cos(southAngle) * distance)
-                yEmpty = (math.sin(southAngle) * distance)
-                #get the index of the ray in the occupancy grid
-                index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                #if the index is not out of bounds
-                if index < self.size and index >= 0:
-                    #set the cell to occupied space
-                    self.occupancy_grid.data[index] = 0
-
-        #if the variance of East is the highest, the door is in the East
-        elif East_var>North_var and East_var>South_var and East_var>West_var:
-            print('Door is in the East')
-            distance = (np.mean(East))
-            distance += 0.15
-            distance = round(distance)
-            x = self.drone_pos.pose.position.x + (distance * math.cos(eastAngle))
-            y = self.drone_pos.pose.position.y + (distance * math.sin(eastAngle))
-            door_index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-            self.occupancy_grid.data[door_index] = -2
-#            self.occupancy_grid_pub.publish(self.occupancy_grid)
-            if distance > 1:
-                    for j in range((int(distance)+1)):
-                        #get the x and y coordinates of the ray
-                        xEmpty = (math.cos(eastAngle) * j)
-                        yEmpty = (math.sin(eastAngle) * j)
-                        #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                        #if the index is not out of bounds
-                        if index < self.size and index >= 0:
-                            #set the cell to empty space
-                            self.occupancy_grid.data[index] = 0
-            else:
-                #get the x and y coordinates of the ray
-                xEmpty = (math.cos(eastAngle) * distance)
-                yEmpty = (math.sin(eastAngle) * distance)
-                #get the index of the ray in the occupancy grid
-                index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                #if the index is not out of bounds
-                if index < self.size and index >= 0:
-                    #set the cell to occupied space
-                    self.occupancy_grid.data[index] = 0
-
-            
-        #if the variance of West is the highest, the door is in the West
-        elif West_var>North_var and West_var>South_var and West_var>East_var:
-            print('Door is in the West')
-            distance = (np.mean(West))
-            distance += 0.15
-            distance = round(distance)
-            x = self.drone_pos.pose.position.x + (distance * math.cos(westAngle))
-            y = self.drone_pos.pose.position.y + (distance * math.sin(westAngle))
-            door_index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-            self.occupancy_grid.data[door_index] = -2
-            if distance > 1:
-                    for j in range((int(distance)+1)):
-                        #get the x and y coordinates of the ray
-                        xEmpty = (math.cos(westAngle) * j)
-                        yEmpty = (math.sin(westAngle) * j)
-                        #get the index of the ray in the occupancy grid
-                        index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                        #if the index is not out of bounds
-                        if index < self.size and index >= 0:
-                            #set the cell to empty space
-                            self.occupancy_grid.data[index] = 0
-            else:
-                #get the x and y coordinates of the ray
-                xEmpty = (math.cos(westAngle) * distance)
-                yEmpty = (math.sin(westAngle) * distance)
-                #get the index of the ray in the occupancy grid
-                index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
-                #if the index is not out of bounds
-                if index < self.size and index >= 0:
-                    #set the cell to occupied space
-                    self.occupancy_grid.data[index] = 0
-#            self.occupancy_grid_pub.publish(self.occupancy_grid)
-
-
+    def detect_dog(self):
+        rate = rospy.Rate(10)
+        #call waitForTransform to make sure the transform is available
         
-    def mainloop(self):
-        rate = rospy.Rate(5)
-        print(self.occupancy_grid.info.origin.position)
-        self.occupancy_grid.data[self.size/2-1] = 0
-        if self.dog and (self.dog.x != 0 or self.dog.y != 0):
-             
-            lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
+        for i in range(3): 
+            lookup = self.tfBuffer.lookup_transform('world', 'cell_tower', rospy.Time.now())
             #print('LOOKUP', lookup)
             goal_point = PointStamped("cell_tower",self.dog)
             #print("GOAL_POINT TYPE", type(goal_point))
@@ -240,15 +75,138 @@ class occupancy_grid:
             self.dog = Vector3(int(goal_point1.point.x), int(goal_point1.point.y), int(goal_point1.point.z))
             print('SELF.DOG', self.dog)
             print('SELF.Drone', self.drone_pos.pose.position)
+            
+            rate.sleep()
+        #set the dog cell to -3
+        self.occupancy_grid.data[self.euclidean_to_grid(self.dog.x, self.dog.y)] = -3
+
+    def detect_door(self):
+        #get 10 readings from the lidar 
+        rate = rospy.Rate(15)
+        North=[]
+        South=[]
+        East=[]
+        West=[]
+        for i in range(10):
+            x=self.lidar_reading.ranges
+            #if x is empty continue
+            if len(x)==0:
+                continue
+            #print identifier x
+            if x[3]!='inf':
+                North.append(x[3])
+            if x[15]!='inf':
+                East.append(x[15])
+            if x[11]!='inf':
+                South.append(x[11])
+            if x[7]!='inf':
+                West.append(x[7])
+            print('-'*50)
+            rate.sleep()
+        #calculate the variance of North, South, East, West
+        North_var=np.std(North)
+        South_var=np.std(South)
+        East_var=np.std(East)
+        West_var=np.std(West)
+
+        if North_var>.02 and min(North)<1:
+            northAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 3
+            dist = round(np.mean(North)+.6)
+            x = self.drone_pos.pose.position.x + (dist * math.cos(northAngle))
+            y = self.drone_pos.pose.position.y + (dist * math.sin(northAngle))
+            pos=self.euclidean_to_grid(round(x),round(y))
+            self.occupancy_grid.data[int(pos)] = -1
+            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
+            testDoor = Point(x,y,0)
+            useKeyservice(testDoor)
+            
+
+            self.occupancy_grid.data[int(pos)] = -2
+            return
+        elif South_var>.02 and min(South)<1:
+            southAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 11
+            dist = int(np.mean(South)+.5)
+            x = self.drone_pos.pose.position.x + (dist * math.cos(southAngle))
+            y = self.drone_pos.pose.position.y + (dist * math.sin(southAngle))
+            pos=self.euclidean_to_grid(x,y)
+            self.occupancy_grid.data[int(pos)] = -1
+            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
+            testDoor = Point(x,y,0)
+            bool=useKeyservice(testDoor)
+            print(bool)
+            print('door opened')
+            
+            self.occupancy_grid.data[int(pos)] = -2
+            return
+        elif East_var>.02 and min(East)<1:
+            eastAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 15
+            dist = round(np.mean(East)+.175)
+            x = round(self.drone_pos.pose.position.x + (dist * math.cos(eastAngle)))
+            y = round(self.drone_pos.pose.position.y + (dist * math.sin(eastAngle)))
+            pos=self.euclidean_to_grid(x,y)
+            self.occupancy_grid.data[int(pos)] = -1
+            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
+            testDoor = Point(x,y,0)
+            fuck=useKeyservice(testDoor)
+            rospy.sleep(2)
+            print(fuck)
+            print(East)
+            print(East_var)
+            print("LSLGKDHGLSKDLHGKSLGNLKDSNGKLSDGNISLDGHLSIDHGLISDHGOIGHSIODGHOSIDGHOISDGHOISDGh")
+            self.occupancy_grid.data[int(pos)] = -2
+            return
+        
+        elif West_var>.02 and min(West)<1:
+            westAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 7
+            dist = round(np.mean(West)+.175)
+            x = self.drone_pos.pose.position.x + (dist * math.cos(westAngle))
+            y = self.drone_pos.pose.position.y + (dist * math.sin(westAngle))
+            pos=self.euclidean_to_grid(x,y)
+            self.occupancy_grid.data[int(pos)] = -1
+            useKeyservice = rospy.ServiceProxy('/use_key', use_key)
+            testDoor = Point(x,y,0)
+            useKeyservice(testDoor)
+            self.occupancy_grid.data[int(pos)] = -2
+            return
+
+        
+    def mainloop(self):
+        rate = rospy.Rate(5)
+        print(self.occupancy_grid.info.origin.position)
+        self.occupancy_grid.data[self.size/2-1] = 0
         #add the position of the dog to the occupancy grid
         dog_index = self.occupancy_grid.info.height * (int(self.dog.x) + self.occupancy_grid.info.width//2) + (int(self.dog.y) + self.occupancy_grid.info.height//2)
         print('DOG_INDEX', int(dog_index))
         self.occupancy_grid.data[int(dog_index)] = -3
+        
         while not rospy.is_shutdown():
+            if self.dog and (self.dog.x != 0 or self.dog.y != 0) and not self.dog_detected:
+                try: 
+                    lookup = self.tfBuffer.lookup_transform('cell_tower', 'world', rospy.Time.now())
+                    #print('LOOKUP', lookup)
+                    goal_point = PointStamped("cell_tower",self.dog)
+                    #print("GOAL_POINT TYPE", type(goal_point))
+                    #print("GOAL_POINT", goal_point)
+                    print('SELF.DOG BEFORE TRANSFORM', self.dog)
+                    goal_point1 = do_transform_point(goal_point, lookup)
+                    #print('TRANSFORMED DOG POINT',goal_point1)
+                    self.dog = Vector3((goal_point1.point.x), (goal_point1.point.y), (goal_point1.point.z))
+                    print((self.dog.x))
+                    print((self.dog.y))
+                    print('*'*100)
+                    dog_index = self.euclidean_to_grid(round(self.dog.x), round(self.dog.y+.01))
+                    self.occupancy_grid.data[int(dog_index)] = -3
+                    self.dog_detected = True
+                    print('SELF.DOG', self.dog)
+                    print('SELF.Drone', self.drone_pos.pose.position)
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    continue
+
+
             
             #get the angle of the first ray
             #iterate over all the rays
-            
+            door = list()
             North = 0
             West = 0
             South = 0
@@ -273,6 +231,9 @@ class occupancy_grid:
             print('NORTH', North)
             
             for i in range(len(cardinals)):
+                #print cardinalAngles and cardinals
+                print('CARDINAL ANGLE', cardinalAngles)
+                print('CARDINAL', cardinals)
                 #get the distance of the ray
                 angle = cardinalAngles[i]
                 distance = cardinals[i]
@@ -310,7 +271,12 @@ class occupancy_grid:
                 x = self.drone_pos.pose.position.x + (distance * math.cos(angle))
                 y = self.drone_pos.pose.position.y + (distance * math.sin(angle))
                 index = self.occupancy_grid.info.height * (int(x) + self.occupancy_grid.info.width//2) + int(y) + (self.occupancy_grid.info.height//2)
-                self.occupancy_grid.data[int(index)] = 100
+                if self.occupancy_grid.data[int(index)] == -1 or self.occupancy_grid.data[int(index)] == -2:
+                    pass
+                else:
+                    self.occupancy_grid.data[int(index)] = 100
+                if i == 3:
+                    door.append((int(x), int(y)))
                 if distance > 1:
                     for j in range((int(distance)+1)):
                         #get the x and y coordinates of the ray
@@ -318,6 +284,8 @@ class occupancy_grid:
                         yEmpty = (math.sin(angle) * j)
                         #get the index of the ray in the occupancy grid
                         index = self.occupancy_grid.info.height * (int(xEmpty) + self.occupancy_grid.info.width//2) + int(yEmpty) + self.occupancy_grid.info.height//2
+                        if(self.occupancy_grid.data[index]==-1 or self.occupancy_grid.data[index]==-2):
+                            continue
                         #if the index is not out of bounds
                         if index < self.size and index >= 0:
                             #set the cell to empty space
@@ -340,9 +308,9 @@ class occupancy_grid:
             #useKeyservice(testDoor)
             #doorIndex = self.occupancy_grid.info.height * (1 + self.occupancy_grid.info.width//2) + (0 + self.occupancy_grid.info.height//2)
             #self.occupancy_grid.data[int(doorIndex)] = -2
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
             self.detect_door()
-
-            self.occupancy_grid_pub.publish(self.occupancy_grid)                
+                
             #     #calculate the index of the cell in the occupancy grid
                 
             #     #set the cell to 100
