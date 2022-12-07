@@ -14,14 +14,13 @@ from std_msts.msg import Int32MultiArray
 import math
 import time
 import numpy as np
-# from enum import Enum
+from enum import Enum
 
-# class DroneState(Enum):
-#     GOAL_TRANSFORM = 1
-#     OCCUPANCY_EXPLORE = 2
-#     DOOR_DETECT = 3
-#     PATH_PLAN = 4
-#     MOVE = 5
+class DroneState(Enum):
+    OCCUPANCY_EXPLORE = 1
+    DOOR_DETECT = 2
+    PATH_PLAN = 3
+    MOVE = 4
 
 
 class occupancy_grid:
@@ -57,7 +56,7 @@ class occupancy_grid:
         self.have_plan=False
         self.dogCoords=(0,0)
         self.path = Int32MultiArray()
-        
+        self.droneState = DroneState.OCCUPANCY_EXPLORE
         
         self.mainloop()
     def lidar_callback(self, data):
@@ -397,12 +396,6 @@ class occupancy_grid:
         self.occupancy_grid.data[self.size/2-1] = 0
         #add the position of the dog to the occupancy grid
         while not rospy.is_shutdown():
-
-        
-
-
-
-            
             #get the angle of the first ray
             #iterate over all the rays
             
