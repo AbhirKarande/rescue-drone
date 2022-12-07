@@ -153,6 +153,7 @@ class occupancy_grid:
             self.path = stack[::-1]
             return self.path
         else:
+            self.droneState = DroneState.MOVE
             return move_pos
 
     def move(self, x, y):
@@ -161,6 +162,7 @@ class occupancy_grid:
         #publish the message
         move_msg = Vector3(x, y, 5)
         self.drone_pos_pub.publish(move_msg)
+        self.droneState = DroneState.OCCUPANCY_EXPLORE
 
     def detect_door(self):
         #get 10 readings from the lidar 
@@ -206,8 +208,7 @@ class occupancy_grid:
                 self.occupancy_grid.data[int(pos)] = 100
             else:
                 self.occupancy_grid.data[int(pos)] = -2
-
-            self.occupancy_grid.data[int(pos)] = -2
+            self.droneState = DroneState.PATH_PLAN
             return
         elif South_var>.02 and min(South)<1:
             southAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 11
@@ -226,7 +227,7 @@ class occupancy_grid:
                 self.occupancy_grid.data[int(pos)] = -2
             print('door opened')
             
-            self.occupancy_grid.data[int(pos)] = -2
+            self.droneState = DroneState.PATH_PLAN
             return
         elif East_var>.02 and min(East)<1:
             eastAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 15
@@ -246,7 +247,7 @@ class occupancy_grid:
             print(East)
             print(East_var)
             print("LSLGKDHGLSKDLHGKSLGNLKDSNGKLSDGNISLDGHLSIDHGLISDHGOIGHSIODGHOSIDGHOISDGHOISDGh")
-            self.occupancy_grid.data[int(pos)] = -2
+            self.droneState = DroneState.PATH_PLAN
             return
         
         elif West_var>.02 and min(West)<1:
@@ -264,6 +265,7 @@ class occupancy_grid:
                 self.occupancy_grid.data[int(pos)] = 100
             else:
                 self.occupancy_grid.data[int(pos)] = -2
+            self.droneState = DroneState.PATH_PLAN
             return
     def dog_detection(self):   
         if self.dog and (self.dog.x != 0 or self.dog.y != 0) and not self.dog_detected:
@@ -285,6 +287,7 @@ class occupancy_grid:
             self.dog_detected = True
             print('SELF.DOG', self.dog)
             print('SELF.Drone', self.drone_pos.pose.position)
+
             
                 
 
@@ -381,6 +384,8 @@ class occupancy_grid:
                 if index < self.size and index >= 0:
                     #set the cell to occupied space
                     self.occupancy_grid.data[index] = 0
+
+            self.droneState = DroneState.DOOR_DETECT
             
         #create a point using the x and y coordinates from the door set
         #call the use_key service with the point
@@ -422,9 +427,16 @@ class occupancy_grid:
                         print('SELF.Drone', self.drone_pos.pose.position)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 continue
-            self.occupancygrid_explore()
-            self.detect_door()
-            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            if self.droneState == DroneState.OCCUPANCY_EXPLORE:
+                self.occupancygrid_explore()
+            elif self.droneState == DroneState.DOOR_DETECT:
+                self.detect_door()
+                self.occupancy_grid_pub.publish(self.occupancy_grid)
+            elif self.droneState == DroneState.PATH_PLAN:
+                self.path_plan()
+            elif self.droneState == DroneState.MOVE:
+                self.move()
+
 
             #     #calculate the index of the cell in the occupancy grid
                 
