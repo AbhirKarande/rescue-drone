@@ -6,11 +6,10 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
-from simple_control.src.aStar import AStarPlanner
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from environment_controller.srv import use_key
-from std_msts.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray
 import math
 import time
 import numpy as np
@@ -57,6 +56,7 @@ class occupancy_grid:
         self.dogCoords=(0,0)
         self.path = Int32MultiArray()
         self.droneState = DroneState.OCCUPANCY_EXPLORE
+        self.path_pub = rospy.Publisher('/uav/path', Int32MultiArray, queue_size=1)
         
         self.mainloop()
     def lidar_callback(self, data):
@@ -103,21 +103,26 @@ class occupancy_grid:
 
         #initialize a stack for keeping track of most recent moves
         stack = []
+        door = []
         stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y))
         move_pos = (0,0)
         
         #if the drone is next to a door, move to the door
-        if self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)] == -1:
+        if self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)] == -2 and ((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1) not in door):
             move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+2)
+            door.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1))
             stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+2))
-        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)] == -1:
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)] == -2 and ((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1) not in door):
             move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-2)
+            door.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1))
             stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-2))
-        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)] == -1:
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)] == -2 and ((self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y) not in door):
             move_pos = (self.drone_pos.pose.position.x+2, self.drone_pos.pose.position.y)
+            door.append((self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y))
             stack.append((self.drone_pos.pose.position.x+2, self.drone_pos.pose.position.y))
-        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)] == -1:
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)] == -2 and ((self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y) not in door):
             move_pos = (self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y)
+            door.append((self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y))
             stack.append((self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y))
         
         #if the drone is not next to a door, move to the x or y coordinate closest to the goal position
@@ -125,27 +130,35 @@ class occupancy_grid:
             #if the drone is closer to the goal in the x direction
             if abs(self.drone_pos.pose.position.x - self.dog.x) < abs(self.drone_pos.pose.position.y - self.dog.y):
                 #if the drone is to the left of the goal, move right
-                if self.drone_pos.pose.position.x < self.dog.x:
+                if (self.drone_pos.pose.position.x < self.dog.x) and (self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)] != 100) :
                     move_pos = (self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)
                     stack.append((self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y))
                 #if the drone is to the right of the goal, move left
-                else:
+                elif (self.drone_pos.pose.position.x > self.dog.x) and (self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)] != 100):
                     move_pos = (self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)
                     stack.append((self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y))
             #if the drone is closer to the goal in the y direction
             else:
                 #if the drone is above the goal, move down
-                if self.drone_pos.pose.position.y < self.dog.y:
+                if (self.drone_pos.pose.position.y < self.dog.y) and (self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)] != 100):
                     move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)
                     stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1))
                 #if the drone is below the goal, move up
-                else:
+                elif (self.drone_pos.pose.position.y > self.dog.y) and (self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)] != 100):
                     move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)
                     stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1))
         #if the drone has reached a dead end, backtrack to the last cell that had more than 1 option
-        while self.occupancy_grid.data[self.euclidean_to_grid(move_pos[0], move_pos[1])] == -2:
-            stack.pop()
-            move_pos = stack.pop()
+        while self.occupancy_grid.data[self.euclidean_to_grid(move_pos[0], move_pos[1])] == 100:
+            visited = []
+            last = stack.pop()
+            move_pos = last
+            visited.append(last)
+
+
+
+
+        #if the drone has reached a dead end, backtrack to the last cell that had more than 1 option
+
         
         if self.occupancy_grid.data[self.euclidean_to_grid(move_pos[0], move_pos[1])] == -3:
             print("Found the dog!")
@@ -154,14 +167,16 @@ class occupancy_grid:
             return self.path
         else:
             self.droneState = DroneState.MOVE
+            print('GOING HERE', move_pos)
             return move_pos
 
     def move(self, x, y):
         #create a vector3 message
         #set the x and y values of the message to x and y
         #publish the message
-        move_msg = Vector3(x, y, 5)
+        move_msg = Vector3(x, y, 3.0)
         self.drone_pos_pub.publish(move_msg)
+        rospy.sleep(2)
         self.droneState = DroneState.OCCUPANCY_EXPLORE
 
     def detect_door(self):
@@ -193,7 +208,7 @@ class occupancy_grid:
         East_var=np.std(East)
         West_var=np.std(West)
 
-        if North_var>.02 and min(North)<1:
+        if North_var>.02 and max(North)<1:
             northAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 3
             dist = round(np.mean(North)+.175)
             x = self.drone_pos.pose.position.x + (dist * math.cos(northAngle))
@@ -208,9 +223,11 @@ class occupancy_grid:
                 self.occupancy_grid.data[int(pos)] = 100
             else:
                 self.occupancy_grid.data[int(pos)] = -2
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rospy.sleep(1)
             self.droneState = DroneState.PATH_PLAN
             return
-        elif South_var>.02 and min(South)<1:
+        elif South_var>.02 and max(South)<1:
             southAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 11
             dist = int(np.mean(South)+.175)
             x = self.drone_pos.pose.position.x + (dist * math.cos(southAngle))
@@ -226,10 +243,11 @@ class occupancy_grid:
             else:
                 self.occupancy_grid.data[int(pos)] = -2
             print('door opened')
-            
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rospy.sleep(1)
             self.droneState = DroneState.PATH_PLAN
             return
-        elif East_var>.02 and min(East)<1:
+        elif East_var>.02 and max(East)<1:
             eastAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 15
             dist = round(np.mean(East)+.175)
             x = round(self.drone_pos.pose.position.x + (dist * math.cos(eastAngle)))
@@ -247,10 +265,12 @@ class occupancy_grid:
             print(East)
             print(East_var)
             print("LSLGKDHGLSKDLHGKSLGNLKDSNGKLSDGNISLDGHLSIDHGLISDHGOIGHSIODGHOSIDGHOISDGHOISDGh")
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rospy.sleep(1)
             self.droneState = DroneState.PATH_PLAN
             return
         
-        elif West_var>.02 and min(West)<1:
+        elif West_var>.02 and max(West)<1:
             westAngle = self.lidar_reading.angle_min + self.lidar_reading.angle_increment * 7
             dist = round(np.mean(West)+.175)
             x = self.drone_pos.pose.position.x + (dist * math.cos(westAngle))
@@ -265,6 +285,8 @@ class occupancy_grid:
                 self.occupancy_grid.data[int(pos)] = 100
             else:
                 self.occupancy_grid.data[int(pos)] = -2
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rospy.sleep(1)
             self.droneState = DroneState.PATH_PLAN
             return
     def dog_detection(self):   
@@ -384,9 +406,10 @@ class occupancy_grid:
                 if index < self.size and index >= 0:
                     #set the cell to occupied space
                     self.occupancy_grid.data[index] = 0
-
-            self.droneState = DroneState.DOOR_DETECT
             
+            self.occupancy_grid_pub.publish(self.occupancy_grid)
+            rospy.sleep(2)
+            self.droneState = DroneState.DOOR_DETECT
         #create a point using the x and y coordinates from the door set
         #call the use_key service with the point
         #useKeyservice = rospy.ServiceProxy('/use_key', use_key)
@@ -431,11 +454,10 @@ class occupancy_grid:
                 self.occupancygrid_explore()
             elif self.droneState == DroneState.DOOR_DETECT:
                 self.detect_door()
-                self.occupancy_grid_pub.publish(self.occupancy_grid)
             elif self.droneState == DroneState.PATH_PLAN:
-                self.path_plan()
+                result = self.path_plan()
             elif self.droneState == DroneState.MOVE:
-                self.move()
+                self.move(result[0], result[1])
 
 
             #     #calculate the index of the cell in the occupancy grid
