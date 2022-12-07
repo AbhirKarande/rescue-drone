@@ -113,7 +113,7 @@ class PathPlanner():
                     rospy.loginfo(str(rospy.get_name()) + ": Planning path")
                     # TODO Update to use a launch parameter instead of static value
                     astar = AStarPlanner(safe_distance=1)
-                    path = astar.plan(self.map, self.drone_position, self.dog_coords)
+                    path = astar.plan(self.map, self.drone_position, self.goal_position)
                     if path != None:
                         path = np.array(path)
                         self.have_plan = True
