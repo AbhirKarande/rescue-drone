@@ -10,6 +10,7 @@ from simple_control.src.aStar import AStarPlanner
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from environment_controller.srv import use_key
+from std_msts.msg import Int32MultiArray
 import math
 import time
 import numpy as np
@@ -55,7 +56,7 @@ class occupancy_grid:
         self.dog_detected=False
         self.have_plan=False
         self.dogCoords=(0,0)
-        self.path = []
+        self.path = Int32MultiArray()
         
         
         self.mainloop()
@@ -94,23 +95,42 @@ class occupancy_grid:
         self.occupancy_grid.data[self.euclidean_to_grid(self.dog.x, self.dog.y)] = -3
     
     def path_plan(self):
-        #convert self.drone_pos.pose.position to an array of x and y
-        #convert self.dog to an array of x and y
+        #move to the door if detected
+        #if not detected, move to the x or y coordinate closest to the goal position
+
+        #check the 4 cells in the occupancy grid around the drone
+        #if any of the cells are -1, move 2 cells in that direction
+        #else move 1 cell in the direction of the goal in either the x or y direction
+
+        #initialize a stack for keeping track of most recent moves
+        stack = []
+        stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y))
+        move_pos = (0,0)
         
-        drone_pos = [self.drone_pos.pose.position.x, self.drone_pos.pose.position.y]
-        dog_pos = [self.dog.x, self.dog.y]
-        #create goal_pos, a visible cell closest to the dog
+        #if the drone is next to a door, move to the door
+        if self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)] == -1:
+            move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+2)
+            stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+2))
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)] == -1:
+            move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-2)
+            stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-2))
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)] == -1:
+            move_pos = (self.drone_pos.pose.position.x+2, self.drone_pos.pose.position.y)
+            stack.append((self.drone_pos.pose.position.x+2, self.drone_pos.pose.position.y))
+        elif self.occupancy_grid.data[self.euclidean_to_grid(self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)] == -1:
+            move_pos = (self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y)
+            stack.append((self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y))
         
-        if not self.have_plan:
-            astar = AStarPlanner(safe_distance=1)
-            path = astar.plan(self.map, drone_pos, )
-            if path != None:
-                path = np.array(path)
-                self.have_plan = True
-                path[:,0] = path[:,0] - self.occupancy_grid.info.width//2
-                path[:,1] = path[:,1] - self.occupancy_grid.info.height//2
-        else:
-            rospy.loginfo(str(rospy.get_name()) + "No Path")  
+
+
+        
+
+
+
+
+
+        
+        
 
 
 
