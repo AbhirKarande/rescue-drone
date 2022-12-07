@@ -121,22 +121,40 @@ class occupancy_grid:
             move_pos = (self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y)
             stack.append((self.drone_pos.pose.position.x-2, self.drone_pos.pose.position.y))
         
-
-
+        #if the drone is not next to a door, move to the x or y coordinate closest to the goal position
+        else:
+            #if the drone is closer to the goal in the x direction
+            if abs(self.drone_pos.pose.position.x - self.dog.x) < abs(self.drone_pos.pose.position.y - self.dog.y):
+                #if the drone is to the left of the goal, move right
+                if self.drone_pos.pose.position.x < self.dog.x:
+                    move_pos = (self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y)
+                    stack.append((self.drone_pos.pose.position.x+1, self.drone_pos.pose.position.y))
+                #if the drone is to the right of the goal, move left
+                else:
+                    move_pos = (self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y)
+                    stack.append((self.drone_pos.pose.position.x-1, self.drone_pos.pose.position.y))
+            #if the drone is closer to the goal in the y direction
+            else:
+                #if the drone is above the goal, move down
+                if self.drone_pos.pose.position.y < self.dog.y:
+                    move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1)
+                    stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y+1))
+                #if the drone is below the goal, move up
+                else:
+                    move_pos = (self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1)
+                    stack.append((self.drone_pos.pose.position.x, self.drone_pos.pose.position.y-1))
+        #if the drone has reached a dead end, backtrack to the last cell that had more than 1 option
+        while self.occupancy_grid.data[self.euclidean_to_grid(move_pos[0], move_pos[1])] == -2:
+            stack.pop()
+            move_pos = stack.pop()
         
-
-
-
-
-
-        
-        
-
-
-
-
-
-
+        if self.occupancy_grid.data[self.euclidean_to_grid(move_pos[0], move_pos[1])] == -3:
+            print("Found the dog!")
+            #self.path is equal to the reverse of the stack
+            self.path = stack[::-1]
+            return self.path
+        else:
+            return move_pos
 
     def move(self, x, y):
         #create a vector3 message
